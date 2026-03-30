@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Author {
+  id          Int      @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  birthYear   Int
+  nationality String
+  biography   String?
+  createdAt   DateTime @default(now())
+  books       Book[]
+
+  @@index([lastName])
+  @@index([nationality])
+}
+
+model Publisher {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  country     String
+  foundedYear Int
+  website     String?
+  createdAt   DateTime @default(now())
+  books       Book[]
+
+  @@index([name])
+  @@index([country])
+}
+
+model Genre {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  books Book[]
+
+  @@index([name])
+}
+
+model Book {
+  id            Int       @id @default(autoincrement())
+  title         String
+  isbn          String    @unique
+  publishedYear Int
+  pageCount     Int
+  language      String
+  description   String
+  coverImage    String?
+  authorId      Int
+  publisherId   Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  author        Author    @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  publisher     Publisher @relation(fields: [publisherId], references: [id], onDelete: Restrict)
+  genres        Genre[]
+  reviews       Review[]
+
+  @@index([title])
+  @@index([publishedYear])
+  @@index([language])
+  @@index([authorId])
+  @@index([publisherId])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  bookId    Int
+  userName  String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([bookId])
+  @@index([rating])
+  @@index([createdAt])
+}
