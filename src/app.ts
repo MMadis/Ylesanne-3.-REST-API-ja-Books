@@ -7,9 +7,12 @@ import { publishersRoutes } from "./routes/publishers-routes";
 import { genresRoutes } from "./routes/genres-routes";
 import { reviewsRoutes } from "./routes/reviews-routes";
 import { errorHandler } from "./middleware/error-handler";
+import { getDataSourceMode } from "./config/data-source";
+import { prisma } from "./lib/prisma";
 
 export function buildApp() {
   const app = Fastify({ logger: true });
+  const dataSourceMode = getDataSourceMode();
 
   app.register(cors, { origin: true });
 
@@ -32,6 +35,12 @@ export function buildApp() {
   });
 
   app.get("/health", async () => ({ status: "ok" }));
+
+  if (dataSourceMode === "prisma") {
+    app.addHook("onClose", async () => {
+      await prisma.$disconnect();
+    });
+  }
 
   app.register(booksRoutes);
   app.register(authorsRoutes);

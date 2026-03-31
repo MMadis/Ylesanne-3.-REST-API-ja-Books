@@ -1,17 +1,22 @@
 {
   "name": "ylesanne-3.-rest-api-ja-books",
   "version": "1.0.0",
-  "description": "Library information system REST API with Fastify, TypeScript and Prisma",
+  "description": "Library information system",
   "main": "dist/src/main.js",
   "scripts": {
     "dev": "tsx watch src/main.ts",
+    "dev:prisma": "set DATA_SOURCE_MODE=prisma&& tsx watch src/main.ts",
     "build": "tsc",
     "start": "node dist/src/main.js",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
+    "test:errors": "jest --runInBand tests/api.errors.test.ts",
+    "test:prisma": "jest --runInBand tests/api.prisma.test.ts",
     "test:watch": "jest --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed",
     "db:seed": "prisma db seed"
   },
   "repository": {

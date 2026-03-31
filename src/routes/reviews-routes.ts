@@ -5,20 +5,20 @@ import { idParamSchema, updateReviewSchema, validate } from "../validators/schem
 export async function reviewsRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/v1/reviews/:id", async (request) => {
     const params = validate(idParamSchema, request.params);
-    const result = getReviewById(params.id);
+    const result = await getReviewById(params.id);
     return { data: result };
   });
 
   app.put("/api/v1/reviews/:id", async (request) => {
     const params = validate(idParamSchema, request.params);
     const body = validate(updateReviewSchema, request.body);
-    const result = updateReview(params.id, body);
+    const result = await updateReview(params.id, body);
     return { data: result };
   });
 
   app.delete("/api/v1/reviews/:id", async (request, reply) => {
     const params = validate(idParamSchema, request.params);
-    deleteReview(params.id);
+    await deleteReview(params.id);
     reply.status(204).send();
   });
 }
