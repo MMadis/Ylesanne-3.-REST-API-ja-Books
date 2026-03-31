@@ -10,7 +10,6 @@ import {
   updateBook,
 } from "../services/library-service";
 import {
-  bookIdParamSchema,
   booksQuerySchema,
   createBookSchema,
   createReviewSchema,
@@ -52,17 +51,17 @@ export async function booksRoutes(app: FastifyInstance): Promise<void> {
     reply.status(204).send();
   });
 
-  app.post("/api/v1/books/:bookId/reviews", async (request, reply) => {
-    const params = validate(bookIdParamSchema, request.params);
+  app.post("/api/v1/books/:id/reviews", async (request, reply) => {
+    const params = validate(idParamSchema, request.params);
     const body = validate(createReviewSchema, request.body);
-    const created = await createBookReview(params.bookId, body);
+    const created = await createBookReview(params.id, body);
     reply.status(201).send({ data: created });
   });
 
-  app.get("/api/v1/books/:bookId/reviews", async (request) => {
-    const params = validate(bookIdParamSchema, request.params);
+  app.get("/api/v1/books/:id/reviews", async (request) => {
+    const params = validate(idParamSchema, request.params);
     const query = validate(reviewsQuerySchema, request.query);
-    const result = await getBookReviews(params.bookId, query);
+    const result = await getBookReviews(params.id, query);
     return { data: result };
   });
 

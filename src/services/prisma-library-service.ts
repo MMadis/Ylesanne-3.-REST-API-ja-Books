@@ -125,21 +125,21 @@ function toBookView(book: BookWithRelations): BookView {
 }
 
 async function ensureBookExists(id: number): Promise<void> {
-  const exists = await prisma.book.findUnique({ where: { id }, select: { id: true } });
+  const exists = await prisma.book.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   if (!exists) {
     throw new AppError("Book not found", 404);
   }
 }
 
 async function ensureAuthorExists(id: number): Promise<void> {
-  const exists = await prisma.author.findUnique({ where: { id }, select: { id: true } });
+  const exists = await prisma.author.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   if (!exists) {
     throw new AppError("Author not found", 404);
   }
 }
 
 async function ensurePublisherExists(id: number): Promise<void> {
-  const exists = await prisma.publisher.findUnique({ where: { id }, select: { id: true } });
+  const exists = await prisma.publisher.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   if (!exists) {
     throw new AppError("Publisher not found", 404);
   }
@@ -147,7 +147,7 @@ async function ensurePublisherExists(id: number): Promise<void> {
 
 async function ensureGenreIdsExist(genreIds: number[]): Promise<void> {
   const found = await prisma.genre.findMany({
-    where: { id: { in: genreIds } },
+    where: { id: { in: genreIds }, deletedAt: null },
     select: { id: true },
   });
   if (found.length !== genreIds.length) {
@@ -162,7 +162,7 @@ export async function getBooks(query: BooksQuery): Promise<PagedResult<BookView>
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
 
-    const where: Prisma.BookWhereInput = {};
+    const where: Prisma.BookWhereInput = { deletedAt: null };
 
     if (query.title) {
       where.title = { contains: query.title, mode: "insensitive" };
@@ -221,8 +221,8 @@ export async function getBooks(query: BooksQuery): Promise<PagedResult<BookView>
 
 export async function getBookById(id: number): Promise<BookView> {
   try {
-    const found = await prisma.book.findUnique({
-      where: { id },
+    const found = await prisma.book.findFirst({
+      where: { id, deletedAt: null },
       include: { author: true, publisher: true, genres: true },
     });
     if (!found) {
@@ -237,17 +237,17 @@ export async function getBookById(id: number): Promise<BookView> {
 export async function createBook(input: BookInput): Promise<BookView> {
   try {
     const created = await prisma.$transaction(async (tx) => {
-      const author = await tx.author.findUnique({ where: { id: input.authorId }, select: { id: true } });
+      const author = await tx.author.findFirst({ where: { id: input.authorId, deletedAt: null }, select: { id: true } });
       if (!author) {
         throw new AppError("Author not found", 404);
       }
 
-      const publisher = await tx.publisher.findUnique({ where: { id: input.publisherId }, select: { id: true } });
+      const publisher = await tx.publisher.findFirst({ where: { id: input.publisherId, deletedAt: null }, select: { id: true } });
       if (!publisher) {
         throw new AppError("Publisher not found", 404);
       }
 
-      const foundGenres = await tx.genre.findMany({ where: { id: { in: input.genreIds } }, select: { id: true } });
+      const foundGenres = await tx.genre.findMany({ where: { id: { in: input.genreIds }, deletedAt: null }, select: { id: true } });
       if (foundGenres.length !== input.genreIds.length) {
         throw new AppError("One or more genres not found", 404);
       }
@@ -322,7 +322,7 @@ export async function updateBook(id: number, input: Partial<BookInput>): Promise
 
 export async function deleteBook(id: number): Promise<void> {
   try {
-    await prisma.book.delete({ where: { id } });
+    await prisma.book.update({ data: { deletedAt: new Date() }, where: { id } });
   } catch (error) {
     mapPrismaError(error);
   }
@@ -353,6 +353,7 @@ export async function getBookReviews(bookId: number, query: ReviewsQuery): Promi
     const result = await prisma.review.findMany({
       where: {
         bookId,
+        deletedAt: null,
         rating: query.rating,
       },
       orderBy: {
@@ -373,7 +374,7 @@ export async function getBookAverageRating(
     await ensureBookExists(bookId);
 
     const aggregate = await prisma.review.aggregate({
-      where: { bookId },
+      where: { bookId, deletedAt: null },
       _avg: { rating: true },
       _count: { rating: true },
     });
@@ -390,7 +391,7 @@ export async function getBookAverageRating(
 
 export async function getReviewById(id: number): Promise<Review> {
   try {
-    const found = await prisma.review.findUnique({ where: { id } });
+    const found = await prisma.review.findFirst({ where: { id, deletedAt: null } });
     if (!found) {
       throw new AppError("Review not found", 404);
     }
@@ -402,6 +403,11 @@ export async function getReviewById(id: number): Promise<Review> {
 
 export async function updateReview(id: number, input: Partial<ReviewInput>): Promise<Review> {
   try {
+    const exists = await prisma.review.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+    if (!exists) {
+      throw new AppError("Review not found", 404);
+    }
+
     const updated = await prisma.review.update({
       where: { id },
       data: {
@@ -418,7 +424,7 @@ export async function updateReview(id: number, input: Partial<ReviewInput>): Pro
 
 export async function deleteReview(id: number): Promise<void> {
   try {
-    await prisma.review.delete({ where: { id } });
+    await prisma.review.update({ data: { deletedAt: new Date() }, where: { id } });
   } catch (error) {
     mapPrismaError(error);
   }
@@ -429,6 +435,7 @@ export async function getAuthors(query: AuthorsQuery): Promise<Author[]> {
     const order = query.order ?? "asc";
     const result = await prisma.author.findMany({
       where: {
+        deletedAt: null,
         lastName: query.lastName ? { contains: query.lastName, mode: "insensitive" } : undefined,
         nationality: query.nationality ? { contains: query.nationality, mode: "insensitive" } : undefined,
       },
@@ -443,7 +450,7 @@ export async function getAuthors(query: AuthorsQuery): Promise<Author[]> {
 
 export async function getAuthorById(id: number): Promise<Author> {
   try {
-    const found = await prisma.author.findUnique({ where: { id } });
+    const found = await prisma.author.findFirst({ where: { id, deletedAt: null } });
     if (!found) {
       throw new AppError("Author not found", 404);
     }
@@ -472,6 +479,8 @@ export async function createAuthor(input: AuthorInput): Promise<Author> {
 
 export async function updateAuthor(id: number, input: Partial<AuthorInput>): Promise<Author> {
   try {
+    await ensureAuthorExists(id);
+
     const updated = await prisma.author.update({
       where: { id },
       data: {
@@ -490,11 +499,11 @@ export async function updateAuthor(id: number, input: Partial<AuthorInput>): Pro
 
 export async function deleteAuthor(id: number): Promise<void> {
   try {
-    const hasBooks = await prisma.book.count({ where: { authorId: id } });
+    const hasBooks = await prisma.book.count({ where: { authorId: id, deletedAt: null } });
     if (hasBooks > 0) {
       throw new AppError("Cannot delete author with existing books", 409);
     }
-    await prisma.author.delete({ where: { id } });
+    await prisma.author.update({ data: { deletedAt: new Date() }, where: { id } });
   } catch (error) {
     mapPrismaError(error);
   }
@@ -504,7 +513,7 @@ export async function getAuthorBooks(authorId: number): Promise<BookView[]> {
   try {
     await ensureAuthorExists(authorId);
     const result = await prisma.book.findMany({
-      where: { authorId },
+      where: { authorId, deletedAt: null },
       include: { author: true, publisher: true, genres: true },
       orderBy: { title: "asc" },
     });
@@ -518,6 +527,7 @@ export async function getPublishers(query: PublishersQuery): Promise<Publisher[]
   try {
     const result = await prisma.publisher.findMany({
       where: {
+        deletedAt: null,
         name: query.name ? { contains: query.name, mode: "insensitive" } : undefined,
         country: query.country ? { contains: query.country, mode: "insensitive" } : undefined,
       },
@@ -532,7 +542,7 @@ export async function getPublishers(query: PublishersQuery): Promise<Publisher[]
 
 export async function getPublisherById(id: number): Promise<Publisher> {
   try {
-    const found = await prisma.publisher.findUnique({ where: { id } });
+    const found = await prisma.publisher.findFirst({ where: { id, deletedAt: null } });
     if (!found) {
       throw new AppError("Publisher not found", 404);
     }
@@ -560,6 +570,8 @@ export async function createPublisher(input: PublisherInput): Promise<Publisher>
 
 export async function updatePublisher(id: number, input: Partial<PublisherInput>): Promise<Publisher> {
   try {
+    await ensurePublisherExists(id);
+
     const updated = await prisma.publisher.update({
       where: { id },
       data: {
@@ -577,11 +589,11 @@ export async function updatePublisher(id: number, input: Partial<PublisherInput>
 
 export async function deletePublisher(id: number): Promise<void> {
   try {
-    const hasBooks = await prisma.book.count({ where: { publisherId: id } });
+    const hasBooks = await prisma.book.count({ where: { publisherId: id, deletedAt: null } });
     if (hasBooks > 0) {
       throw new AppError("Cannot delete publisher with existing books", 409);
     }
-    await prisma.publisher.delete({ where: { id } });
+    await prisma.publisher.update({ data: { deletedAt: new Date() }, where: { id } });
   } catch (error) {
     mapPrismaError(error);
   }
@@ -591,7 +603,7 @@ export async function getPublisherBooks(publisherId: number): Promise<BookView[]
   try {
     await ensurePublisherExists(publisherId);
     const result = await prisma.book.findMany({
-      where: { publisherId },
+      where: { publisherId, deletedAt: null },
       include: { author: true, publisher: true, genres: true },
       orderBy: { title: "asc" },
     });
@@ -603,7 +615,7 @@ export async function getPublisherBooks(publisherId: number): Promise<BookView[]
 
 export async function getGenres(): Promise<Genre[]> {
   try {
-    const result = await prisma.genre.findMany({ orderBy: { name: "asc" } });
+    const result = await prisma.genre.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
     return result.map((genre) => toGenre(genre));
   } catch (error) {
     mapPrismaError(error);
@@ -612,7 +624,7 @@ export async function getGenres(): Promise<Genre[]> {
 
 export async function getGenreById(id: number): Promise<Genre> {
   try {
-    const found = await prisma.genre.findUnique({ where: { id } });
+    const found = await prisma.genre.findFirst({ where: { id, deletedAt: null } });
     if (!found) {
       throw new AppError("Genre not found", 404);
     }
@@ -637,13 +649,14 @@ export async function createGenre(input: GenreInput): Promise<Genre> {
 
 export async function getGenreBooks(id: number): Promise<BookView[]> {
   try {
-    const exists = await prisma.genre.findUnique({ where: { id }, select: { id: true } });
+    const exists = await prisma.genre.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
     if (!exists) {
       throw new AppError("Genre not found", 404);
     }
 
     const rows = await prisma.book.findMany({
       where: {
+        deletedAt: null,
         genres: {
           some: {
             id,

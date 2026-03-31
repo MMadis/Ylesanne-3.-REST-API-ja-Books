@@ -2,9 +2,12 @@ import { buildApp } from "../src/app";
 
 describe("Library API error behavior (mock mode)", () => {
   const app = buildApp();
+  let token: string;
 
   beforeAll(async () => {
     await app.ready();
+    const res = await app.inject({ method: "POST", url: "/api/auth/login" });
+    token = res.json().token;
   });
 
   afterAll(async () => {
@@ -23,6 +26,7 @@ describe("Library API error behavior (mock mode)", () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/v1/books",
+      headers: { authorization: `Bearer ${token}` },
       payload: {
         title: "Duplicate ISBN",
         isbn: "9780747532699",
@@ -42,7 +46,7 @@ describe("Library API error behavior (mock mode)", () => {
   });
 
   it("returns 409 when deleting author with books", async () => {
-    const res = await app.inject({ method: "DELETE", url: "/api/v1/authors/1" });
+    const res = await app.inject({ method: "DELETE", url: "/api/v1/authors/1", headers: { authorization: `Bearer ${token}` } });
     const payload = res.json();
 
     expect(res.statusCode).toBe(409);

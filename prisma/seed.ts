@@ -3,6 +3,11 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.review.deleteMany();
+  await prisma.book.deleteMany();
+  await prisma.author.deleteMany();
+  await prisma.publisher.deleteMany();
+
   const fantasy = await prisma.genre.upsert({ where: { name: "Fantasy" }, update: {}, create: { name: "Fantasy" } });
   const dystopian = await prisma.genre.upsert({ where: { name: "Dystopian" }, update: {}, create: { name: "Dystopian" } });
   const classic = await prisma.genre.upsert({ where: { name: "Classic" }, update: {}, create: { name: "Classic" } });

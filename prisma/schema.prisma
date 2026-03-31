@@ -14,7 +14,8 @@ model Author {
   birthYear   Int
   nationality String
   biography   String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
   books       Book[]
 
   @@index([lastName])
@@ -27,7 +28,8 @@ model Publisher {
   country     String
   foundedYear Int
   website     String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
   books       Book[]
 
   @@index([name])
@@ -35,9 +37,10 @@ model Publisher {
 }
 
 model Genre {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  books Book[]
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  deletedAt DateTime?
+  books     Book[]
 
   @@index([name])
 }
@@ -55,6 +58,7 @@ model Book {
   publisherId   Int
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
 
   author        Author    @relation(fields: [authorId], references: [id], onDelete: Restrict)
   publisher     Publisher @relation(fields: [publisherId], references: [id], onDelete: Restrict)
@@ -75,6 +79,7 @@ model Review {
   rating    Int
   comment   String
   createdAt DateTime @default(now())
+  deletedAt DateTime?
 
   book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
 

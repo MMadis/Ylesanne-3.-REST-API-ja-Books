@@ -2,9 +2,12 @@ import { buildApp } from "../src/app";
 
 describe("Library API", () => {
   const app = buildApp();
+  let token: string;
 
   beforeAll(async () => {
     await app.ready();
+    const res = await app.inject({ method: "POST", url: "/api/auth/login" });
+    token = res.json().token;
   });
 
   afterAll(async () => {
@@ -34,6 +37,7 @@ describe("Library API", () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/v1/books/1/reviews",
+      headers: { authorization: `Bearer ${token}` },
       payload: {
         userName: "test-user",
         rating: 5,
@@ -51,6 +55,7 @@ describe("Library API", () => {
     const res = await app.inject({
       method: "POST",
       url: "/api/v1/books",
+      headers: { authorization: `Bearer ${token}` },
       payload: {
         title: "Broken ISBN",
         isbn: "abc",

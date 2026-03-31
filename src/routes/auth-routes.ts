@@ -1,0 +1,1 @@
+import { FastifyInstance } from 'fastify'; export async function authRoutes(app: FastifyInstance) { app.post('/api/auth/login', async (request, reply) => { const token = app.jwt.sign({ user: 'admin' }); return { token }; }); }

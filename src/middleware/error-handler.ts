@@ -10,6 +10,16 @@ export function errorHandler(error: FastifyError | Error, _request: FastifyReque
     return;
   }
 
+  if ("statusCode" in error && typeof error.statusCode === "number") {
+    reply.status(error.statusCode).send({
+      error: error.message,
+      details: [],
+    });
+    return;
+  }
+
+  _request.log.error({ err: error }, "Unhandled error");
+
   reply.status(500).send({
     error: "Internal server error",
     details: [],

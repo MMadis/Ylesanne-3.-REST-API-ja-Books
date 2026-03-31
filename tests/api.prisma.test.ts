@@ -4,6 +4,7 @@ const runPrismaTests = process.env.RUN_PRISMA_TESTS === "true";
 
 (runPrismaTests ? describe : describe.skip)("Library API integration (prisma mode)", () => {
   let app: FastifyInstance;
+  let authHeader: { authorization: string };
   const previousMode = process.env.DATA_SOURCE_MODE;
 
   beforeAll(async () => {
@@ -16,6 +17,10 @@ const runPrismaTests = process.env.RUN_PRISMA_TESTS === "true";
     const appModule = await import("../src/app");
     app = appModule.buildApp();
     await app.ready();
+
+    const loginRes = await app.inject({ method: "POST", url: "/api/auth/login" });
+    const token = loginRes.json().token as string;
+    authHeader = { authorization: `Bearer ${token}` };
   });
 
   afterAll(async () => {
@@ -36,6 +41,7 @@ const runPrismaTests = process.env.RUN_PRISMA_TESTS === "true";
     const authorRes = await app.inject({
       method: "POST",
       url: "/api/v1/authors",
+      headers: authHeader,
       payload: {
         firstName: "Test",
         lastName: `Author-${suffix}`,
@@ -49,6 +55,7 @@ const runPrismaTests = process.env.RUN_PRISMA_TESTS === "true";
     const publisherRes = await app.inject({
       method: "POST",
       url: "/api/v1/publishers",
+      headers: authHeader,
       payload: {
         name: `Publisher-${suffix}`,
         country: "Estonia",
@@ -61,6 +68,7 @@ const runPrismaTests = process.env.RUN_PRISMA_TESTS === "true";
     const genreRes = await app.inject({
       method: "POST",
       url: "/api/v1/genres",
+      headers: authHeader,
       payload: { name: `Genre-${suffix}` },
     });
     expect(genreRes.statusCode).toBe(201);
@@ -69,6 +77,7 @@ const runPrismaTests = process.env.RUN_PRISMA_TESTS === "true";
     const bookRes = await app.inject({
       method: "POST",
       url: "/api/v1/books",
+      headers: authHeader,
       payload: {
         title: `Prisma Book ${suffix}`,
         isbn: `97812345${suffix.slice(-5)}`,
@@ -87,6 +96,7 @@ const runPrismaTests = process.env.RUN_PRISMA_TESTS === "true";
     const reviewRes = await app.inject({
       method: "POST",
       url: `/api/v1/books/${bookId}/reviews`,
+      headers: authHeader,
       payload: {
         userName: "integration-user",
         rating: 5,
