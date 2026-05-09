@@ -22,6 +22,28 @@ function formatDate(iso: string): string {
   return d.toLocaleString();
 }
 
+function Stars({ value }: { value: number }) {
+  const rounded = Math.max(0, Math.min(5, Math.round(value)));
+  return (
+    <div className="flex items-center gap-0.5" aria-label={`Hinnang ${rounded} / 5`}>
+      {Array.from({ length: 5 }).map((_, idx) => {
+        const filled = idx < rounded;
+        return (
+          <svg
+            key={idx}
+            viewBox="0 0 20 20"
+            className={filled ? "h-4 w-4 text-amber-500" : "h-4 w-4 text-slate-300"}
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path d="M10 15.27l-5.18 2.73 0.99-5.78L1.64 7.97l5.8-0.84L10 1.88l2.56 5.25 5.8 0.84-4.17 4.25 0.99 5.78z" />
+          </svg>
+        );
+      })}
+    </div>
+  );
+}
+
 export function BookDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
@@ -178,14 +200,14 @@ export function BookDetailPage() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-800 hover:bg-slate-50"
+            className="btn btn-outline"
             onClick={() => navigate("/books")}
           >
             Tagasi nimekirja
           </button>
           <button
             type="button"
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+            className="btn btn-outline"
             onClick={() => setEditOpen(true)}
             disabled={!book || bookLoading}
           >
@@ -193,7 +215,7 @@ export function BookDetailPage() {
           </button>
           <button
             type="button"
-            className="rounded-md bg-rose-700 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-800 disabled:opacity-50"
+            className="btn btn-danger"
             onClick={onDelete}
             disabled={deleteSubmitting || bookLoading || !book}
           >
@@ -207,7 +229,7 @@ export function BookDetailPage() {
 
       {book ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2">
+          <div className="card p-5 lg:col-span-2">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Pealkiri</div>
@@ -227,7 +249,9 @@ export function BookDetailPage() {
               </div>
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Keel</div>
-                <div className="mt-1 text-slate-900">{book.language}</div>
+                <div className="mt-2">
+                  <span className="badge badge-blue">{book.language}</span>
+                </div>
               </div>
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Autor</div>
@@ -239,7 +263,13 @@ export function BookDetailPage() {
               </div>
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Žanrid</div>
-                <div className="mt-1 text-slate-900">{book.genres.join(", ")}</div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {book.genres.map((g) => (
+                    <span key={g} className="badge">
+                      {g}
+                    </span>
+                  ))}
+                </div>
               </div>
               <div className="sm:col-span-2">
                 <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Kirjeldus</div>
@@ -255,20 +285,45 @@ export function BookDetailPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <div className="text-sm font-semibold text-slate-900">Keskmine hinnang</div>
-              {avgLoading ? <div className="mt-3"><LoadingSpinner /></div> : null}
-              {avgError ? <div className="mt-3"><ErrorBanner message={avgError} /></div> : null}
+            <div className="card p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-slate-900">Keskmine hinnang</div>
+                <button
+                  type="button"
+                  className="btn btn-outline px-3 py-1.5 text-sm font-semibold"
+                  onClick={() => setReviewsReloadKey((x) => x + 1)}
+                >
+                  Värskenda
+                </button>
+              </div>
+              {avgLoading ? (
+                <div className="mt-3">
+                  <LoadingSpinner />
+                </div>
+              ) : null}
+              {avgError ? (
+                <div className="mt-3">
+                  <ErrorBanner message={avgError} />
+                </div>
+              ) : null}
               {avg ? (
                 <div className="mt-3">
-                  <div className="text-3xl font-semibold text-slate-900">{avg.averageRating.toFixed(2)}</div>
-                  <div className="mt-1 text-sm text-slate-600">Arvustusi: {avg.totalReviews}</div>
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <div className="text-3xl font-semibold text-slate-900">{avg.averageRating.toFixed(2)}</div>
+                      <div className="mt-1 text-sm text-slate-600">Arvustusi: {avg.totalReviews}</div>
+                    </div>
+                    <Stars value={avg.averageRating} />
+                  </div>
+                  {avg.totalReviews === 0 ? (
+                    <div className="mt-3 text-sm text-slate-600">Pole veel hinnanguid.</div>
+                  ) : null}
                 </div>
               ) : null}
             </div>
 
             {book.coverImage ? (
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="card overflow-hidden">
                 <img src={book.coverImage} alt={book.title} className="h-64 w-full object-cover" />
               </div>
             ) : null}
@@ -276,7 +331,7 @@ export function BookDetailPage() {
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="card p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-lg font-semibold text-slate-900">Arvustused</div>
@@ -284,15 +339,23 @@ export function BookDetailPage() {
           </div>
           <button
             type="button"
-            className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-800 hover:bg-slate-50"
+            className="btn btn-outline px-3 py-1.5 text-sm font-semibold"
             onClick={() => setReviewsReloadKey((x) => x + 1)}
           >
             Värskenda
           </button>
         </div>
 
-        {reviewsLoading ? <div className="mt-4"><LoadingSpinner label="Laen arvustusi..." /></div> : null}
-        {reviewsError ? <div className="mt-4"><ErrorBanner message={reviewsError} /></div> : null}
+        {reviewsLoading ? (
+          <div className="mt-4">
+            <LoadingSpinner label="Laen arvustusi..." />
+          </div>
+        ) : null}
+        {reviewsError ? (
+          <div className="mt-4">
+            <ErrorBanner message={reviewsError} />
+          </div>
+        ) : null}
 
         {!reviewsLoading && reviews.length === 0 ? (
           <div className="mt-4 text-sm text-slate-600">Arvustusi pole veel.</div>
@@ -304,7 +367,10 @@ export function BookDetailPage() {
               <div key={r.id} className="rounded-lg border border-slate-200 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="font-semibold text-slate-900">{r.userName}</div>
-                  <div className="text-sm text-slate-700">Hinnang: {r.rating}/5</div>
+                  <div className="flex items-center gap-2">
+                    <Stars value={r.rating} />
+                    <div className="text-sm text-slate-700">{r.rating}/5</div>
+                  </div>
                 </div>
                 <div className="mt-1 text-xs text-slate-500">{formatDate(r.createdAt)}</div>
                 <div className="mt-3 whitespace-pre-wrap text-sm text-slate-800">{r.comment}</div>

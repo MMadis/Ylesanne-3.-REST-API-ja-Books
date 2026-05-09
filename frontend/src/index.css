@@ -1,3 +1,69 @@
-﻿@tailwind base;
-@tailwind components;
-@tailwind utilities;
+﻿@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply bg-slate-900 text-white hover:bg-slate-800;
+  }
+
+  .btn-outline {
+    @apply border border-slate-300 bg-white text-slate-800 hover:bg-slate-50;
+  }
+
+  .btn-danger {
+    @apply bg-rose-700 text-white hover:bg-rose-800;
+  }
+
+  .btn-danger-outline {
+    @apply border border-rose-300 bg-white text-rose-800 hover:bg-rose-50;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .select {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .textarea {
+    @apply w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700;
+  }
+
+  .badge-blue {
+    @apply bg-sky-100 text-sky-800;
+  }
+
+  .badge-green {
+    @apply bg-emerald-100 text-emerald-800;
+  }
+
+  .badge-red {
+    @apply bg-rose-100 text-rose-800;
+  }
+}

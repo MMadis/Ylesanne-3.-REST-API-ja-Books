@@ -43,11 +43,16 @@ export function BookForm({
   const [language, setLanguage] = useState(initialValues?.language ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [coverImage, setCoverImage] = useState(initialValues?.coverImage ?? "");
+  const [coverPreviewOk, setCoverPreviewOk] = useState(true);
   const [authorId, setAuthorId] = useState(initialValues?.authorId ? String(initialValues.authorId) : "");
   const [publisherId, setPublisherId] = useState(initialValues?.publisherId ? String(initialValues.publisherId) : "");
   const [genreIds, setGenreIds] = useState<number[]>(initialValues?.genreIds ?? []);
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCoverPreviewOk(true);
+  }, [coverImage]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -139,7 +144,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Pealkiri</div>
           <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
@@ -149,7 +154,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">ISBN</div>
           <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="input"
             value={isbn}
             onChange={(e) => setIsbn(e.target.value)}
           />
@@ -159,7 +164,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Aasta</div>
           <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="input"
             inputMode="numeric"
             value={publishedYear}
             onChange={(e) => setPublishedYear(e.target.value)}
@@ -172,7 +177,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Lehekülgi</div>
           <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="input"
             inputMode="numeric"
             value={pageCount}
             onChange={(e) => setPageCount(e.target.value)}
@@ -185,7 +190,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Keel</div>
           <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="input"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
           />
@@ -195,7 +200,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Pildi URL (valikuline)</div>
           <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="input"
             value={coverImage}
             onChange={(e) => setCoverImage(e.target.value)}
           />
@@ -204,7 +209,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Autor</div>
           <select
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+            className="select"
             value={authorId}
             onChange={(e) => setAuthorId(e.target.value)}
             disabled={optionsLoading}
@@ -222,7 +227,7 @@ export function BookForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Kirjastus</div>
           <select
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+            className="select"
             value={publisherId}
             onChange={(e) => setPublisherId(e.target.value)}
             disabled={optionsLoading}
@@ -243,7 +248,7 @@ export function BookForm({
       <div className="space-y-2">
         <div className="text-sm font-medium text-slate-800">Kirjeldus</div>
         <textarea
-          className="h-28 w-full resize-y rounded-md border border-slate-300 px-3 py-2"
+          className="textarea h-28"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
@@ -259,7 +264,10 @@ export function BookForm({
         </div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {genres.map((g) => (
-            <label key={g.id} className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2">
+            <label
+              key={g.id}
+              className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 hover:bg-slate-50"
+            >
               <input
                 type="checkbox"
                 checked={genreIds.includes(g.id)}
@@ -272,10 +280,28 @@ export function BookForm({
         </div>
       </div>
 
+      {coverImage.trim().length > 0 ? (
+        <div className="space-y-2">
+          <div className="text-sm font-medium text-slate-800">Pildi eelvaade</div>
+          {coverPreviewOk ? (
+            <div className="overflow-hidden rounded-lg border border-slate-200">
+              <img
+                src={coverImage}
+                alt="Raamatu kaas"
+                className="h-48 w-full object-cover"
+                onError={() => setCoverPreviewOk(false)}
+              />
+            </div>
+          ) : (
+            <ErrorBanner message="Pildi eelvaadet ei õnnestunud laadida. Kontrolli URL-i." />
+          )}
+        </div>
+      ) : null}
+
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <button
           type="button"
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-800 hover:bg-slate-50"
+          className="btn btn-outline"
           onClick={onCancel}
           disabled={submitting}
         >
@@ -283,7 +309,7 @@ export function BookForm({
         </button>
         <button
           type="submit"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+          className="btn btn-primary"
           disabled={submitting}
         >
           {submitting ? "Salvestan..." : submitLabel}

@@ -15,6 +15,9 @@ function parseYear(value: string): number | undefined {
 }
 
 export function BooksPage() {
+  const [titleInput, setTitleInput] = useState("");
+  const [yearInput, setYearInput] = useState("");
+  const [languageInput, setLanguageInput] = useState("");
   const [title, setTitle] = useState("");
   const [year, setYear] = useState("");
   const [language, setLanguage] = useState("");
@@ -31,6 +34,21 @@ export function BooksPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setTitle(titleInput), 350);
+    return () => window.clearTimeout(t);
+  }, [titleInput]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setYear(yearInput), 350);
+    return () => window.clearTimeout(t);
+  }, [yearInput]);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setLanguage(languageInput), 350);
+    return () => window.clearTimeout(t);
+  }, [languageInput]);
 
   const query = useMemo(() => {
     const q: Record<string, unknown> = {
@@ -75,6 +93,12 @@ export function BooksPage() {
 
   const books: BookView[] = data?.data ?? [];
   const meta = data?.pagination;
+  const rangeText = useMemo(() => {
+    if (!meta || meta.totalItems === 0) return "Näitan 0 tulemust";
+    const start = (meta.currentPage - 1) * meta.itemsPerPage + 1;
+    const end = Math.min(meta.currentPage * meta.itemsPerPage, meta.totalItems);
+    return `Näitan ${start}–${end} / ${meta.totalItems}`;
+  }, [meta]);
 
   const onDelete = async (id: number) => {
     const ok = window.confirm("Kas oled kindel, et soovid raamatu kustutada?");
@@ -106,85 +130,105 @@ export function BooksPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Raamatud</h1>
-          <div className="mt-1 text-sm text-slate-600">Otsing, sorteerimine ja pagination</div>
+          <div className="mt-1 text-sm text-slate-600">{meta ? rangeText : "Otsing, sorteerimine ja pagination"}</div>
         </div>
         <button
           type="button"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          className="btn btn-primary"
           onClick={() => setCreateOpen(true)}
         >
           Lisa raamat
         </button>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
-          <label className="space-y-1 md:col-span-2">
-            <div className="text-sm font-medium text-slate-800">Pealkiri</div>
-            <input
-              className="w-full rounded-md border border-slate-300 px-3 py-2"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setPage(1);
-              }}
-            />
-          </label>
-          <label className="space-y-1">
-            <div className="text-sm font-medium text-slate-800">Aasta</div>
-            <input
-              className="w-full rounded-md border border-slate-300 px-3 py-2"
-              inputMode="numeric"
-              value={year}
-              onChange={(e) => {
-                setYear(e.target.value);
-                setPage(1);
-              }}
-              placeholder="nt 2019"
-            />
-          </label>
-          <label className="space-y-1">
-            <div className="text-sm font-medium text-slate-800">Keel</div>
-            <input
-              className="w-full rounded-md border border-slate-300 px-3 py-2"
-              value={language}
-              onChange={(e) => {
-                setLanguage(e.target.value);
-                setPage(1);
-              }}
-              placeholder="nt EN"
-            />
-          </label>
-          <label className="space-y-1">
-            <div className="text-sm font-medium text-slate-800">Sort</div>
-            <select
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2"
-              value={sortBy}
-              onChange={(e) => {
-                const next = e.target.value === "publishedYear" ? "publishedYear" : "title";
-                setSortBy(next);
+      <div className="card p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-6">
+            <label className="space-y-1 md:col-span-2">
+              <div className="text-sm font-medium text-slate-800">Pealkiri</div>
+              <input
+                className="input"
+                value={titleInput}
+                onChange={(e) => {
+                  setTitleInput(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="Otsi pealkirja järgi..."
+              />
+            </label>
+            <label className="space-y-1">
+              <div className="text-sm font-medium text-slate-800">Aasta</div>
+              <input
+                className="input"
+                inputMode="numeric"
+                value={yearInput}
+                onChange={(e) => {
+                  setYearInput(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="nt 2019"
+              />
+            </label>
+            <label className="space-y-1">
+              <div className="text-sm font-medium text-slate-800">Keel</div>
+              <input
+                className="input"
+                value={languageInput}
+                onChange={(e) => {
+                  setLanguageInput(e.target.value);
+                  setPage(1);
+                }}
+                placeholder="nt EN"
+              />
+            </label>
+            <label className="space-y-1">
+              <div className="text-sm font-medium text-slate-800">Sort</div>
+              <select
+                className="select"
+                value={sortBy}
+                onChange={(e) => {
+                  const next = e.target.value === "publishedYear" ? "publishedYear" : "title";
+                  setSortBy(next);
+                  setPage(1);
+                }}
+              >
+                <option value="title">Pealkiri</option>
+                <option value="publishedYear">Aasta</option>
+              </select>
+            </label>
+            <label className="space-y-1">
+              <div className="text-sm font-medium text-slate-800">Suund</div>
+              <select
+                className="select"
+                value={order}
+                onChange={(e) => {
+                  const next = e.target.value === "desc" ? "desc" : "asc";
+                  setOrder(next);
+                  setPage(1);
+                }}
+              >
+                <option value="asc">Kasvav</option>
+                <option value="desc">Kahanev</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-outline"
+              onClick={() => {
+                setTitleInput("");
+                setYearInput("");
+                setLanguageInput("");
+                setSortBy("title");
+                setOrder("asc");
                 setPage(1);
               }}
             >
-              <option value="title">Pealkiri</option>
-              <option value="publishedYear">Aasta</option>
-            </select>
-          </label>
-          <label className="space-y-1">
-            <div className="text-sm font-medium text-slate-800">Suund</div>
-            <select
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2"
-              value={order}
-              onChange={(e) => {
-                const next = e.target.value === "desc" ? "desc" : "asc";
-                setOrder(next);
-                setPage(1);
-              }}
-            >
-              <option value="asc">Kasvav</option>
-              <option value="desc">Kahanev</option>
-            </select>
-          </label>
+              Puhasta filtrid
+            </button>
+          </div>
         </div>
       </div>
 
@@ -195,7 +239,7 @@ export function BooksPage() {
           action={
             <button
               type="button"
-              className="rounded-md bg-rose-700 px-3 py-1 text-sm font-semibold text-white hover:bg-rose-800"
+              className="btn btn-danger px-3 py-1.5 text-sm"
               onClick={() => setReloadKey((x) => x + 1)}
             >
               Proovi uuesti
@@ -204,10 +248,10 @@ export function BooksPage() {
         />
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
-            <thead className="bg-slate-50 text-slate-700">
+            <thead className="sticky top-0 bg-slate-50 text-slate-700">
               <tr>
                 <th className="px-4 py-3 font-semibold">Pealkiri</th>
                 <th className="px-4 py-3 font-semibold">Autor</th>
@@ -220,22 +264,42 @@ export function BooksPage() {
             <tbody className="divide-y divide-slate-200">
               {books.map((b) => (
                 <tr key={b.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{b.title}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-700">
+                        {(b.title.trim().slice(0, 1) || "?").toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold text-slate-900">{b.title}</div>
+                      </div>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-slate-800">{b.authorName}</td>
                   <td className="px-4 py-3 text-slate-800">{b.publishedYear}</td>
-                  <td className="px-4 py-3 text-slate-800">{b.genres.join(", ")}</td>
-                  <td className="px-4 py-3 text-slate-800">{b.language}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {b.genres.slice(0, 3).map((g) => (
+                        <span key={g} className="badge">
+                          {g}
+                        </span>
+                      ))}
+                      {b.genres.length > 3 ? <span className="badge">+{b.genres.length - 3}</span> : null}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="badge badge-blue">{b.language}</span>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap justify-end gap-2">
                       <Link
                         to={`/books/${b.id}`}
-                        className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-800 hover:bg-slate-50"
+                        className="btn btn-outline px-3 py-1.5 text-sm font-semibold"
                       >
                         Vaata
                       </Link>
                       <button
                         type="button"
-                        className="rounded-md border border-rose-300 px-3 py-1 text-sm text-rose-800 hover:bg-rose-50 disabled:opacity-50"
+                        className="btn btn-danger-outline px-3 py-1.5 text-sm font-semibold"
                         onClick={() => onDelete(b.id)}
                         disabled={deletingId === b.id}
                       >
@@ -248,7 +312,7 @@ export function BooksPage() {
               {!loading && books.length === 0 ? (
                 <tr>
                   <td className="px-4 py-8 text-center text-slate-600" colSpan={6}>
-                    Tulemusi ei leitud
+                    Tulemusi ei leitud. Proovi teisi filtreid.
                   </td>
                 </tr>
               ) : null}

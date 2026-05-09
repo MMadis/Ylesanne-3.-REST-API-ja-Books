@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 
 export function Modal({
   title,
@@ -9,6 +10,14 @@ export function Modal({
   children: ReactNode;
   onClose: () => void;
 }) {
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -19,12 +28,12 @@ export function Modal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
+      <div className="card w-full max-w-2xl shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
           <div className="text-base font-semibold text-slate-900">{title}</div>
           <button
             type="button"
-            className="rounded-md px-2 py-1 text-sm text-slate-600 hover:bg-slate-100"
+            className="btn btn-outline px-3 py-1.5 text-sm font-semibold"
             onClick={onClose}
           >
             Sulge

@@ -53,7 +53,7 @@ export function ReviewForm({
         <label className="space-y-1 sm:col-span-2">
           <div className="text-sm font-medium text-slate-800">Kasutajanimi</div>
           <input
-            className="w-full rounded-md border border-slate-300 px-3 py-2"
+            className="input"
             value={userName}
             onChange={(e) => setUserName(e.target.value)}
             disabled={submitting}
@@ -63,7 +63,7 @@ export function ReviewForm({
         <label className="space-y-1">
           <div className="text-sm font-medium text-slate-800">Hinnang</div>
           <select
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2"
+            className="select"
             value={rating}
             onChange={(e) => setRating(e.target.value)}
             disabled={submitting}
@@ -80,7 +80,7 @@ export function ReviewForm({
       <label className="space-y-1">
         <div className="text-sm font-medium text-slate-800">Kommentaar</div>
         <textarea
-          className="h-24 w-full resize-y rounded-md border border-slate-300 px-3 py-2"
+          className="textarea h-24"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           disabled={submitting}
@@ -90,7 +90,7 @@ export function ReviewForm({
       <div className="flex justify-end">
         <button
           type="submit"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+          className="btn btn-primary"
           disabled={submitting}
         >
           {submitting ? "Lisan..." : "Lisa arvustus"}

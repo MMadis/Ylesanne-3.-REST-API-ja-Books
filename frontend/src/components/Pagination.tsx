@@ -24,7 +24,8 @@ export function Pagination({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="text-sm text-slate-700">
         Leht <span className="font-semibold">{safePage}</span> /{" "}
-        <span className="font-semibold">{totalPages}</span> · Kokku{" "}
+        <span className="font-semibold">{totalPages}</span> · Limit{" "}
+        <span className="font-semibold">{limit}</span> · Kokku{" "}
         <span className="font-semibold">{meta.totalItems}</span>
       </div>
 
@@ -32,7 +33,7 @@ export function Pagination({
         <label className="flex items-center gap-2 text-sm text-slate-700">
           Limit
           <select
-            className="rounded-md border border-slate-300 bg-white px-2 py-1"
+            className="select w-auto px-2 py-1 text-sm"
             value={limit}
             onChange={(e) => onLimitChange(Number(e.target.value))}
           >
@@ -46,7 +47,7 @@ export function Pagination({
 
         <button
           type="button"
-          className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+          className="btn btn-outline px-3 py-1.5 text-sm font-semibold"
           disabled={!meta.hasPreviousPage}
           onClick={() => onPageChange(safePage - 1)}
         >
@@ -54,7 +55,7 @@ export function Pagination({
         </button>
         <button
           type="button"
-          className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+          className="btn btn-outline px-3 py-1.5 text-sm font-semibold"
           disabled={!meta.hasNextPage}
           onClick={() => onPageChange(safePage + 1)}
         >
