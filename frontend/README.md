@@ -1,73 +1,68 @@
-# React + TypeScript + Vite
+# Books Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend rakendus raamatute haldamiseks
 
-Currently, two official plugins are available:
+## Autorid
+- Madis (individuaaltoo)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Eeldused
+- Node.js 20+ 
+- Töötab koos selle repositooriumi backendiga
 
-## React Compiler
+## Keskkonnamuutujad
+Loo fail `frontend/.env` (või kopeeri `frontend/.env.example`) ja sea API aadress:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+VITE_API_URL=http://localhost:3001/api/v1
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Käivitamine (arendus)
+### 1) Käivita backend (repositooriumi juurkaustas)
+Backend vajab `JWT_SECRET` muutujat, muidu ta ei käivitu.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+npm install
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+.env failis:
 ```
+JWT_SECRET="dev_secret"
+DATA_SOURCE_MODE="mock"
+PORT="3001"
+```
+npm run dev
+
+
+Kontroll:
+- `http://localhost:3001/health` → `{ "status": "ok" }`
+
+### 2) Käivita frontend (kaustas `frontend/`)
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Avaneb:
+- `http://localhost:5173`
+
+## Build (tootmisversioon)
+
+```powershell
+cd frontend
+npm run build
+npm run preview
+```
+
+## Funktsionaalsus (UI)
+- `/books` — nimekiri + filtrid (pealkiri/aasta/keel) + sort + pagination + lisamine + kustutamine
+- `/books/:id` — detail + keskmine hinnang + arvustused + arvustuse lisamine + muutmine + kustutamine
+
+## Levinud probleemid
+### “API: ühendatud”, aga lisamine/muutmine/kustutamine annab Network Error
+Põhjus on tavaliselt CORS preflight (OPTIONS) või Authorization headeri lubamine.
+
+Kontrolli, et backendis oleks CORS lubatud meetoditele ja headeritele:
+- Methods: `GET, POST, PUT, DELETE, OPTIONS`
+- Headers: `Content-Type, Authorization`
+
+Ja taaskäivita backend peale muudatusi.

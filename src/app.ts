@@ -10,7 +10,6 @@ import { reviewsRoutes } from "./routes/reviews-routes";
 import { authRoutes } from "./routes/auth-routes";
 import { errorHandler } from "./middleware/error-handler";
 import { getDataSourceMode } from "./config/data-source";
-import { prisma } from "./lib/prisma";
 
 /**
  * Build and configure the Fastify application instance.
@@ -32,12 +31,16 @@ export function buildApp() {
        try {
          await request.jwtVerify();
        } catch (err) {
-         reply.status(401).send({ error: "Unauthorized" });
+         return reply.status(401).send({ error: "Unauthorized", details: [] });
        }
     }
   });
 
-  app.register(cors, { origin: true });
+  app.register(cors, {
+    origin: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  });
 
   app.register(rateLimit, {
     max: 100,
@@ -61,6 +64,7 @@ export function buildApp() {
 
   if (dataSourceMode === "prisma") {
     app.addHook("onClose", async () => {
+      const { prisma } = await import("./lib/prisma");
       await prisma.$disconnect();
     });
   }

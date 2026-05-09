@@ -1,11 +1,20 @@
-﻿import { getDataSourceMode } from "../config/data-source";
+import { getDataSourceMode } from "../config/data-source";
 import * as mockService from "./mock-library-service";
-import * as prismaService from "./prisma-library-service";
 
 export type { BooksQuery, AuthorsQuery, PublishersQuery, ReviewsQuery, BookView } from "./mock-library-service";
 
-function getService() {
-  return getDataSourceMode() === "prisma" ? prismaService : mockService;
+type Service = typeof mockService;
+
+let cachedPrismaService: Service | null = null;
+
+function getService(): Service {
+  if (getDataSourceMode() === "prisma") {
+    if (!cachedPrismaService) {
+      cachedPrismaService = require("./prisma-library-service") as Service;
+    }
+    return cachedPrismaService;
+  }
+  return mockService;
 }
 
 export const getBooks = (...args: Parameters<typeof mockService.getBooks>) => getService().getBooks(...args);
@@ -46,5 +55,11 @@ export const getGenreBooks = (...args: Parameters<typeof mockService.getGenreBoo
  * Evaluates dynamically on startup.
  */
 export function createLibraryService(mode: "mock" | "prisma") {
-  return mode === "prisma" ? prismaService : mockService;
+  if (mode === "prisma") {
+    if (!cachedPrismaService) {
+      cachedPrismaService = require("./prisma-library-service") as Service;
+    }
+    return cachedPrismaService;
+  }
+  return mockService;
 }

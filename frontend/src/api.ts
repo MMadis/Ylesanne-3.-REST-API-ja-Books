@@ -114,12 +114,39 @@ export interface AverageRating {
   totalReviews: number;
 }
 
+export interface HealthResponse {
+  status: string;
+}
+
+export interface LoginResponse {
+  token: string;
+}
+
+const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined) || "http://localhost:3001/api/v1";
+const apiRootUrl = apiBaseUrl.replace(/\/api\/v1\/?$/, "");
+
+async function login(signal?: AbortSignal): Promise<string> {
+  const res = await axios.post<LoginResponse>(`${apiRootUrl}/api/auth/login`, { user: "admin" }, { signal });
+  return res.data.token;
+}
+
+async function ensureAuthToken(): Promise<string> {
+  const existing = localStorage.getItem("token");
+  if (existing && existing.trim().length > 0) return existing;
+  const token = await login();
+  localStorage.setItem("token", token);
+  return token;
+}
+
 export function getApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiErrorResponse>;
     const serverMessage = axiosError.response?.data?.error;
     if (serverMessage) return serverMessage;
     if (axiosError.code === "ERR_CANCELED") return "Päring tühistati";
+    if (!axiosError.response) {
+      return `Võrgu viga: brauser ei saanud API-ga ühendust. Kontrolli, et backend töötab (${apiBaseUrl}) ja et CORS lubab Authorization headeri ning PUT/DELETE meetodid.`;
+    }
     return axiosError.message;
   }
   if (error instanceof Error) return error.message;
@@ -127,7 +154,7 @@ export function getApiErrorMessage(error: unknown): string {
 }
 
 export const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001/api/v1",
+  baseURL: apiBaseUrl,
 });
 
 api.interceptors.request.use((config) => {
@@ -159,16 +186,19 @@ export async function fetchBook(id: number, signal?: AbortSignal): Promise<BookV
 }
 
 export async function createBook(input: CreateBookInput): Promise<BookView> {
+  await ensureAuthToken();
   const res = await api.post<ApiResponse<BookView>>("/books", input);
   return res.data.data;
 }
 
 export async function updateBook(id: number, input: UpdateBookInput): Promise<BookView> {
+  await ensureAuthToken();
   const res = await api.put<ApiResponse<BookView>>(`/books/${id}`, input);
   return res.data.data;
 }
 
 export async function deleteBook(id: number): Promise<void> {
+  await ensureAuthToken();
   await api.delete(`/books/${id}`);
 }
 
@@ -193,6 +223,7 @@ export async function fetchBookReviews(bookId: number, query: ReviewsQuery, sign
 }
 
 export async function createBookReview(bookId: number, input: CreateReviewInput): Promise<Review> {
+  await ensureAuthToken();
   const res = await api.post<ApiResponse<Review>>(`/books/${bookId}/reviews`, input);
   return res.data.data;
 }
@@ -200,4 +231,9 @@ export async function createBookReview(bookId: number, input: CreateReviewInput)
 export async function fetchBookAverageRating(bookId: number, signal?: AbortSignal): Promise<AverageRating> {
   const res = await api.get<ApiResponse<AverageRating>>(`/books/${bookId}/average-rating`, { signal });
   return res.data.data;
+}
+
+export async function fetchHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  const res = await axios.get<HealthResponse>(`${apiRootUrl}/health`, { signal });
+  return res.data;
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes } from "react-router-dom";
-import { fetchBooks, getApiErrorMessage } from "./api";
+import { fetchHealth, getApiErrorMessage } from "./api";
 import { BookDetailPage } from "./pages/BookDetailPage";
 import { BooksPage } from "./pages/BooksPage";
 
@@ -12,7 +12,7 @@ export default function App() {
     const controller = new AbortController();
     setApiStatus("checking");
     setApiError(null);
-    fetchBooks({ page: 1, limit: 1, sortBy: "title", order: "asc" }, controller.signal)
+    fetchHealth(controller.signal)
       .then(() => setApiStatus("ok"))
       .catch((e: unknown) => {
         if (controller.signal.aborted) return;
