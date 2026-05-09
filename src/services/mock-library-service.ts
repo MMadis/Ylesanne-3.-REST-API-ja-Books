@@ -133,163 +133,24 @@ function toBookView(book: Book): BookView {
   };
 }
 
-export function getBooks(query: BooksQuery): PagedResult<BookView> {
-  const sortBy = query.sortBy ?? "title";
-  const order = query.order ?? "asc";
-  const page = query.page ?? 1;
-  const limit = query.limit ?? 10;
+import * as booksService from "./mock/books-service";
+import * as authorsService from "./mock/authors-service";
 
-  let filtered = [...books];
+export const getBooks = booksService.getBooks;
 
-  if (query.title) {
-    filtered = filtered.filter((book) => containsInsensitive(book.title, query.title as string));
-  }
+export const getBookById = booksService.getBookById;
 
-  if (query.language) {
-    filtered = filtered.filter((book) => containsInsensitive(book.language, query.language as string));
-  }
+export const createBook = booksService.createBook;
 
-  if (query.year !== undefined) {
-    filtered = filtered.filter((book) => book.publishedYear === query.year);
-  }
+export const updateBook = booksService.updateBook;
 
-  if (query.author) {
-    filtered = filtered.filter((book) => {
-      const author = authors.find((candidate) => candidate.id === book.authorId);
-      if (!author) {
-        return false;
-      }
-      const fullName = `${author.firstName} ${author.lastName}`;
-      return containsInsensitive(fullName, query.author as string) || containsInsensitive(author.lastName, query.author as string);
-    });
-  }
+export const deleteBook = booksService.deleteBook;
 
-  if (query.publisher) {
-    filtered = filtered.filter((book) => {
-      const publisher = publishers.find((candidate) => candidate.id === book.publisherId);
-      return publisher ? containsInsensitive(publisher.name, query.publisher as string) : false;
-    });
-  }
+export const createBookReview = booksService.createBookReview;
 
-  if (query.genre) {
-    filtered = filtered.filter((book) => {
-      const names = book.genreIds
-        .map((genreId) => genres.find((genre) => genre.id === genreId)?.name)
-        .filter((value): value is string => value !== undefined);
-      return names.some((name) => containsInsensitive(name, query.genre as string));
-    });
-  }
+export const getBookReviews = booksService.getBookReviews;
 
-  filtered.sort((a, b) => {
-    const aValue = sortBy === "title" ? a.title.toLowerCase() : a.publishedYear;
-    const bValue = sortBy === "title" ? b.title.toLowerCase() : b.publishedYear;
-    return sortCompare(aValue, bValue, order);
-  });
-
-  const paged = paginate(filtered, page, limit);
-  const pagination = buildPaginationMeta(paged.totalItems, page, limit);
-
-  return {
-    data: paged.data.map((book) => toBookView(book)),
-    pagination,
-  };
-}
-
-export function getBookById(id: number): BookView {
-  return toBookView(ensureBookExists(id));
-}
-
-export function createBook(input: BookInput): BookView {
-  ensureIsbnUnique(input.isbn);
-  validateRelations(input.authorId, input.publisherId, input.genreIds);
-
-  const now = new Date().toISOString();
-  const created: Book = {
-    ...input,
-    id: idCounters.book,
-    createdAt: now,
-    updatedAt: now,
-  };
-  idCounters.book += 1;
-  books.push(created);
-
-  return toBookView(created);
-}
-
-export function updateBook(id: number, input: Partial<BookInput>): BookView {
-  const existing = ensureBookExists(id);
-
-  if (input.isbn) {
-    ensureIsbnUnique(input.isbn, id);
-  }
-
-  const merged: Book = {
-    ...existing,
-    ...input,
-    updatedAt: new Date().toISOString(),
-  };
-
-  validateRelations(merged.authorId, merged.publisherId, merged.genreIds);
-
-  const index = books.findIndex((book) => book.id === id);
-  books[index] = merged;
-  return toBookView(merged);
-}
-
-export function deleteBook(id: number): void {
-  ensureBookExists(id);
-  const bookIndex = books.findIndex((book) => book.id === id);
-  books.splice(bookIndex, 1);
-
-  for (let i = reviews.length - 1; i >= 0; i -= 1) {
-    if (reviews[i].bookId === id) {
-      reviews.splice(i, 1);
-    }
-  }
-}
-
-export function createBookReview(bookId: number, input: ReviewInput): Review {
-  ensureBookExists(bookId);
-  const review: Review = {
-    ...input,
-    id: idCounters.review,
-    bookId,
-    createdAt: new Date().toISOString(),
-  };
-  idCounters.review += 1;
-  reviews.push(review);
-  return review;
-}
-
-export function getBookReviews(bookId: number, query: ReviewsQuery): Review[] {
-  ensureBookExists(bookId);
-  const order = query.order ?? "desc";
-
-  let filtered = reviews.filter((review) => review.bookId === bookId);
-
-  if (query.rating !== undefined) {
-    filtered = filtered.filter((review) => review.rating === query.rating);
-  }
-
-  filtered.sort((a, b) => sortCompare(a.createdAt, b.createdAt, order));
-  return filtered;
-}
-
-export function getBookAverageRating(bookId: number): { bookId: number; averageRating: number; totalReviews: number } {
-  ensureBookExists(bookId);
-  const related = reviews.filter((review) => review.bookId === bookId);
-  if (related.length === 0) {
-    return { bookId, averageRating: 0, totalReviews: 0 };
-  }
-
-  const sum = related.reduce((acc, review) => acc + review.rating, 0);
-  const avg = sum / related.length;
-  return {
-    bookId,
-    averageRating: Number(avg.toFixed(2)),
-    totalReviews: related.length,
-  };
-}
+export const getBookAverageRating = booksService.getBookAverageRating;
 
 export function getReviewById(id: number): Review {
   return ensureReviewExists(id);
@@ -312,65 +173,17 @@ export function deleteReview(id: number): void {
   reviews.splice(index, 1);
 }
 
-export function getAuthors(query: AuthorsQuery): Author[] {
-  const order = query.order ?? "asc";
-  let filtered = [...authors];
+export const getAuthors = authorsService.getAuthors;
 
-  if (query.lastName) {
-    filtered = filtered.filter((author) => containsInsensitive(author.lastName, query.lastName as string));
-  }
+export const getAuthorById = authorsService.getAuthorById;
 
-  if (query.nationality) {
-    filtered = filtered.filter((author) => containsInsensitive(author.nationality, query.nationality as string));
-  }
+export const createAuthor = authorsService.createAuthor;
 
-  if (query.sortBy === "lastName") {
-    filtered.sort((a, b) => sortCompare(a.lastName.toLowerCase(), b.lastName.toLowerCase(), order));
-  }
+export const updateAuthor = authorsService.updateAuthor;
 
-  return filtered;
-}
+export const deleteAuthor = authorsService.deleteAuthor;
 
-export function getAuthorById(id: number): Author {
-  return ensureAuthorExists(id);
-}
-
-export function createAuthor(input: AuthorInput): Author {
-  const author: Author = {
-    ...input,
-    id: idCounters.author,
-    createdAt: new Date().toISOString(),
-  };
-  idCounters.author += 1;
-  authors.push(author);
-  return author;
-}
-
-export function updateAuthor(id: number, input: Partial<AuthorInput>): Author {
-  const existing = ensureAuthorExists(id);
-  const updated: Author = {
-    ...existing,
-    ...input,
-  };
-  const index = authors.findIndex((author) => author.id === id);
-  authors[index] = updated;
-  return updated;
-}
-
-export function deleteAuthor(id: number): void {
-  ensureAuthorExists(id);
-  const hasBooks = books.some((book) => book.authorId === id);
-  if (hasBooks) {
-    throw new AppError("Cannot delete author with existing books", 409);
-  }
-  const index = authors.findIndex((author) => author.id === id);
-  authors.splice(index, 1);
-}
-
-export function getAuthorBooks(authorId: number): BookView[] {
-  ensureAuthorExists(authorId);
-  return books.filter((book) => book.authorId === authorId).map((book) => toBookView(book));
-}
+export const getAuthorBooks = authorsService.getAuthorBooks;
 
 export function getPublishers(query: PublishersQuery): Publisher[] {
   let filtered = [...publishers];

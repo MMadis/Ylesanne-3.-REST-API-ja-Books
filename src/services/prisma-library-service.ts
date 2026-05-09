@@ -4,6 +4,8 @@ import { Author, Book, Genre, PaginationMeta, Publisher, Review } from "../model
 import { AppError } from "../utils/errors";
 import { buildPaginationMeta } from "../utils/pagination";
 import { AuthorsQuery, BookView, BooksQuery, PublishersQuery, ReviewsQuery } from "./mock-library-service";
+import * as booksService from "./prisma/books-service";
+import * as authorsService from "./prisma/authors-service";
 
 interface PagedResult<T> {
   data: T[];
@@ -155,239 +157,21 @@ async function ensureGenreIdsExist(genreIds: number[]): Promise<void> {
   }
 }
 
-export async function getBooks(query: BooksQuery): Promise<PagedResult<BookView>> {
-  try {
-    const sortBy = query.sortBy ?? "title";
-    const order = query.order ?? "asc";
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+export const getBooks = booksService.getBooks;
 
-    const where: Prisma.BookWhereInput = { deletedAt: null };
+export const getBookById = booksService.getBookById;
 
-    if (query.title) {
-      where.title = { contains: query.title, mode: "insensitive" };
-    }
+export const createBook = booksService.createBook;
 
-    if (query.language) {
-      where.language = { contains: query.language, mode: "insensitive" };
-    }
+export const updateBook = booksService.updateBook;
 
-    if (query.year !== undefined) {
-      where.publishedYear = query.year;
-    }
+export const deleteBook = booksService.deleteBook;
 
-    if (query.author) {
-      where.author = {
-        OR: [
-          { firstName: { contains: query.author, mode: "insensitive" } },
-          { lastName: { contains: query.author, mode: "insensitive" } },
-        ],
-      };
-    }
+export const createBookReview = booksService.createBookReview;
 
-    if (query.publisher) {
-      where.publisher = {
-        name: { contains: query.publisher, mode: "insensitive" },
-      };
-    }
+export const getBookReviews = booksService.getBookReviews;
 
-    if (query.genre) {
-      where.genres = {
-        some: {
-          name: { contains: query.genre, mode: "insensitive" },
-        },
-      };
-    }
-
-    const [totalItems, rows] = await prisma.$transaction([
-      prisma.book.count({ where }),
-      prisma.book.findMany({
-        where,
-        include: { author: true, publisher: true, genres: true },
-        orderBy: { [sortBy]: order },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-    ]);
-
-    return {
-      data: rows.map((row) => toBookView(row)),
-      pagination: buildPaginationMeta(totalItems, page, limit),
-    };
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function getBookById(id: number): Promise<BookView> {
-  try {
-    const found = await prisma.book.findFirst({
-      where: { id, deletedAt: null },
-      include: { author: true, publisher: true, genres: true },
-    });
-    if (!found) {
-      throw new AppError("Book not found", 404);
-    }
-    return toBookView(found);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function createBook(input: BookInput): Promise<BookView> {
-  try {
-    const created = await prisma.$transaction(async (tx) => {
-      const author = await tx.author.findFirst({ where: { id: input.authorId, deletedAt: null }, select: { id: true } });
-      if (!author) {
-        throw new AppError("Author not found", 404);
-      }
-
-      const publisher = await tx.publisher.findFirst({ where: { id: input.publisherId, deletedAt: null }, select: { id: true } });
-      if (!publisher) {
-        throw new AppError("Publisher not found", 404);
-      }
-
-      const foundGenres = await tx.genre.findMany({ where: { id: { in: input.genreIds }, deletedAt: null }, select: { id: true } });
-      if (foundGenres.length !== input.genreIds.length) {
-        throw new AppError("One or more genres not found", 404);
-      }
-
-      return tx.book.create({
-        data: {
-          title: input.title,
-          isbn: input.isbn,
-          publishedYear: input.publishedYear,
-          pageCount: input.pageCount,
-          language: input.language,
-          description: input.description,
-          coverImage: input.coverImage,
-          authorId: input.authorId,
-          publisherId: input.publisherId,
-          genres: {
-            connect: input.genreIds.map((id) => ({ id })),
-          },
-        },
-        include: { author: true, publisher: true, genres: true },
-      });
-    });
-
-    return toBookView(created);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function updateBook(id: number, input: Partial<BookInput>): Promise<BookView> {
-  try {
-    await ensureBookExists(id);
-
-    if (input.authorId !== undefined) {
-      await ensureAuthorExists(input.authorId);
-    }
-
-    if (input.publisherId !== undefined) {
-      await ensurePublisherExists(input.publisherId);
-    }
-
-    if (input.genreIds !== undefined) {
-      await ensureGenreIdsExist(input.genreIds);
-    }
-
-    const updated = await prisma.book.update({
-      where: { id },
-      data: {
-        title: input.title,
-        isbn: input.isbn,
-        publishedYear: input.publishedYear,
-        pageCount: input.pageCount,
-        language: input.language,
-        description: input.description,
-        coverImage: input.coverImage,
-        authorId: input.authorId,
-        publisherId: input.publisherId,
-        genres: input.genreIds
-          ? {
-              set: input.genreIds.map((genreId) => ({ id: genreId })),
-            }
-          : undefined,
-      },
-      include: { author: true, publisher: true, genres: true },
-    });
-
-    return toBookView(updated);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function deleteBook(id: number): Promise<void> {
-  try {
-    await prisma.book.update({ data: { deletedAt: new Date() }, where: { id } });
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function createBookReview(bookId: number, input: ReviewInput): Promise<Review> {
-  try {
-    await ensureBookExists(bookId);
-    const created = await prisma.review.create({
-      data: {
-        bookId,
-        userName: input.userName,
-        rating: input.rating,
-        comment: input.comment,
-      },
-    });
-    return toReview(created);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function getBookReviews(bookId: number, query: ReviewsQuery): Promise<Review[]> {
-  try {
-    await ensureBookExists(bookId);
-    const order = query.order ?? "desc";
-
-    const result = await prisma.review.findMany({
-      where: {
-        bookId,
-        deletedAt: null,
-        rating: query.rating,
-      },
-      orderBy: {
-        createdAt: order,
-      },
-    });
-
-    return result.map((review) => toReview(review));
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function getBookAverageRating(
-  bookId: number,
-): Promise<{ bookId: number; averageRating: number; totalReviews: number }> {
-  try {
-    await ensureBookExists(bookId);
-
-    const aggregate = await prisma.review.aggregate({
-      where: { bookId, deletedAt: null },
-      _avg: { rating: true },
-      _count: { rating: true },
-    });
-
-    return {
-      bookId,
-      averageRating: Number((aggregate._avg.rating ?? 0).toFixed(2)),
-      totalReviews: aggregate._count.rating,
-    };
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getBookAverageRating = booksService.getBookAverageRating;
 
 export async function getReviewById(id: number): Promise<Review> {
   try {
@@ -430,98 +214,17 @@ export async function deleteReview(id: number): Promise<void> {
   }
 }
 
-export async function getAuthors(query: AuthorsQuery): Promise<Author[]> {
-  try {
-    const order = query.order ?? "asc";
-    const result = await prisma.author.findMany({
-      where: {
-        deletedAt: null,
-        lastName: query.lastName ? { contains: query.lastName, mode: "insensitive" } : undefined,
-        nationality: query.nationality ? { contains: query.nationality, mode: "insensitive" } : undefined,
-      },
-      orderBy: query.sortBy === "lastName" ? { lastName: order } : undefined,
-    });
+export const getAuthors = authorsService.getAuthors;
 
-    return result.map((author) => toAuthor(author));
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getAuthorById = authorsService.getAuthorById;
 
-export async function getAuthorById(id: number): Promise<Author> {
-  try {
-    const found = await prisma.author.findFirst({ where: { id, deletedAt: null } });
-    if (!found) {
-      throw new AppError("Author not found", 404);
-    }
-    return toAuthor(found);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const createAuthor = authorsService.createAuthor;
 
-export async function createAuthor(input: AuthorInput): Promise<Author> {
-  try {
-    const created = await prisma.author.create({
-      data: {
-        firstName: input.firstName,
-        lastName: input.lastName,
-        birthYear: input.birthYear,
-        nationality: input.nationality,
-        biography: input.biography,
-      },
-    });
-    return toAuthor(created);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const updateAuthor = authorsService.updateAuthor;
 
-export async function updateAuthor(id: number, input: Partial<AuthorInput>): Promise<Author> {
-  try {
-    await ensureAuthorExists(id);
+export const deleteAuthor = authorsService.deleteAuthor;
 
-    const updated = await prisma.author.update({
-      where: { id },
-      data: {
-        firstName: input.firstName,
-        lastName: input.lastName,
-        birthYear: input.birthYear,
-        nationality: input.nationality,
-        biography: input.biography,
-      },
-    });
-    return toAuthor(updated);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function deleteAuthor(id: number): Promise<void> {
-  try {
-    const hasBooks = await prisma.book.count({ where: { authorId: id, deletedAt: null } });
-    if (hasBooks > 0) {
-      throw new AppError("Cannot delete author with existing books", 409);
-    }
-    await prisma.author.update({ data: { deletedAt: new Date() }, where: { id } });
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function getAuthorBooks(authorId: number): Promise<BookView[]> {
-  try {
-    await ensureAuthorExists(authorId);
-    const result = await prisma.book.findMany({
-      where: { authorId, deletedAt: null },
-      include: { author: true, publisher: true, genres: true },
-      orderBy: { title: "asc" },
-    });
-    return result.map((book) => toBookView(book));
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getAuthorBooks = authorsService.getAuthorBooks;
 
 export async function getPublishers(query: PublishersQuery): Promise<Publisher[]> {
   try {

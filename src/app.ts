@@ -12,11 +12,20 @@ import { errorHandler } from "./middleware/error-handler";
 import { getDataSourceMode } from "./config/data-source";
 import { prisma } from "./lib/prisma";
 
+/**
+ * Build and configure the Fastify application instance.
+ * Throws when required environment variables (e.g. `JWT_SECRET`) are missing.
+ */
 export function buildApp() {
   const app = Fastify({ logger: true });
   const dataSourceMode = getDataSourceMode();
 
-  app.register(jwt, { secret: "super_secret_jwt_key_123" });
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error("Missing JWT_SECRET environment variable. Set JWT_SECRET to a secure value.");
+  }
+
+  app.register(jwt, { secret: jwtSecret });
 
   app.addHook("onRequest", async (request, reply) => {
     if (["POST", "PUT", "DELETE"].includes(request.method as string) && request.url.startsWith("/api/v1")) {

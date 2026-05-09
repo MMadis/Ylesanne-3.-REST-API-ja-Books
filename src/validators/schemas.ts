@@ -4,8 +4,13 @@ import { AppError } from "../utils/errors";
 
 const isbnRegex = /^(97(8|9))?\d{9}(\d|X)$/;
 
+/**
+ * Schema for routes with `:id` path parameter.
+ */
 export const idParamSchema = z.object({ id: z.coerce.number().int().positive() });
-export const bookIdParamSchema = z.object({ bookId: z.coerce.number().int().positive() });
+
+// Note: `bookIdParamSchema` was removed as it was unused; use `idParamSchema`
+// for routes that include a single numeric id parameter.
 
 export const createBookSchema = z.object({
   title: z.string().min(1),
@@ -100,6 +105,9 @@ function zodDetails(error: z.ZodError): ErrorDetail[] {
   }));
 }
 
+/**
+ * Validate `input` against `schema`. Throws `AppError(400)` on failure.
+ */
 export function validate<T>(schema: z.ZodType<T>, input: unknown): T {
   const parsed = schema.safeParse(input);
   if (!parsed.success) {
