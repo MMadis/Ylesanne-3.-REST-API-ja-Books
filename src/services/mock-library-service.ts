@@ -135,6 +135,11 @@ function toBookView(book: Book): BookView {
 
 import * as booksService from "./mock/books-service";
 import * as authorsService from "./mock/authors-service";
+import * as publishersService from "./mock/publishers-service";
+import * as genresService from "./mock/genres-service";
+import * as reviewsService from "./mock/reviews-service";
+
+export const mockData = { authors, books, genres, publishers, reviews };
 
 export const getBooks = booksService.getBooks;
 
@@ -152,26 +157,11 @@ export const getBookReviews = booksService.getBookReviews;
 
 export const getBookAverageRating = booksService.getBookAverageRating;
 
-export function getReviewById(id: number): Review {
-  return ensureReviewExists(id);
-}
+export const getReviewById = reviewsService.getReviewById;
 
-export function updateReview(id: number, input: Partial<ReviewInput>): Review {
-  const existing = ensureReviewExists(id);
-  const updated: Review = {
-    ...existing,
-    ...input,
-  };
-  const index = reviews.findIndex((review) => review.id === id);
-  reviews[index] = updated;
-  return updated;
-}
+export const updateReview = reviewsService.updateReview;
 
-export function deleteReview(id: number): void {
-  ensureReviewExists(id);
-  const index = reviews.findIndex((review) => review.id === id);
-  reviews.splice(index, 1);
-}
+export const deleteReview = reviewsService.deleteReview;
 
 export const getAuthors = authorsService.getAuthors;
 
@@ -185,100 +175,22 @@ export const deleteAuthor = authorsService.deleteAuthor;
 
 export const getAuthorBooks = authorsService.getAuthorBooks;
 
-export function getPublishers(query: PublishersQuery): Publisher[] {
-  let filtered = [...publishers];
+export const getPublishers = publishersService.getPublishers;
 
-  if (query.name) {
-    filtered = filtered.filter((publisher) => containsInsensitive(publisher.name, query.name as string));
-  }
+export const getPublisherById = publishersService.getPublisherById;
 
-  if (query.country) {
-    filtered = filtered.filter((publisher) => containsInsensitive(publisher.country, query.country as string));
-  }
+export const createPublisher = publishersService.createPublisher;
 
-  return filtered;
-}
+export const updatePublisher = publishersService.updatePublisher;
 
-export function getPublisherById(id: number): Publisher {
-  return ensurePublisherExists(id);
-}
+export const deletePublisher = publishersService.deletePublisher;
 
-export function createPublisher(input: PublisherInput): Publisher {
-  const exists = publishers.some((publisher) => publisher.name.toLowerCase() === input.name.toLowerCase());
-  if (exists) {
-    throw new AppError("Publisher already exists", 409, [{ field: "name", message: "Must be unique" }]);
-  }
+export const getPublisherBooks = publishersService.getPublisherBooks;
 
-  const publisher: Publisher = {
-    ...input,
-    id: idCounters.publisher,
-    createdAt: new Date().toISOString(),
-  };
-  idCounters.publisher += 1;
-  publishers.push(publisher);
-  return publisher;
-}
+export const getGenres = genresService.getGenres;
 
-export function updatePublisher(id: number, input: Partial<PublisherInput>): Publisher {
-  const existing = ensurePublisherExists(id);
+export const getGenreById = genresService.getGenreById;
 
-  if (input.name) {
-    const conflict = publishers.some(
-      (publisher) => publisher.id !== id && publisher.name.toLowerCase() === input.name?.toLowerCase(),
-    );
-    if (conflict) {
-      throw new AppError("Publisher already exists", 409, [{ field: "name", message: "Must be unique" }]);
-    }
-  }
+export const createGenre = genresService.createGenre;
 
-  const updated: Publisher = {
-    ...existing,
-    ...input,
-  };
-  const index = publishers.findIndex((publisher) => publisher.id === id);
-  publishers[index] = updated;
-  return updated;
-}
-
-export function deletePublisher(id: number): void {
-  ensurePublisherExists(id);
-  const hasBooks = books.some((book) => book.publisherId === id);
-  if (hasBooks) {
-    throw new AppError("Cannot delete publisher with existing books", 409);
-  }
-  const index = publishers.findIndex((publisher) => publisher.id === id);
-  publishers.splice(index, 1);
-}
-
-export function getPublisherBooks(publisherId: number): BookView[] {
-  ensurePublisherExists(publisherId);
-  return books.filter((book) => book.publisherId === publisherId).map((book) => toBookView(book));
-}
-
-export function getGenres(): Genre[] {
-  return [...genres];
-}
-
-export function getGenreById(id: number): Genre {
-  return ensureGenreExists(id);
-}
-
-export function createGenre(input: GenreInput): Genre {
-  const exists = genres.some((genre) => genre.name.toLowerCase() === input.name.toLowerCase());
-  if (exists) {
-    throw new AppError("Genre already exists", 409, [{ field: "name", message: "Must be unique" }]);
-  }
-
-  const genre: Genre = {
-    ...input,
-    id: idCounters.genre,
-  };
-  idCounters.genre += 1;
-  genres.push(genre);
-  return genre;
-}
-
-export function getGenreBooks(id: number): BookView[] {
-  ensureGenreExists(id);
-  return books.filter((book) => book.genreIds.includes(id)).map((book) => toBookView(book));
-}
+export const getGenreBooks = genresService.getGenreBooks;

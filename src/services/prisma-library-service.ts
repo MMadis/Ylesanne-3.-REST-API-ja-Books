@@ -6,6 +6,9 @@ import { buildPaginationMeta } from "../utils/pagination";
 import { AuthorsQuery, BookView, BooksQuery, PublishersQuery, ReviewsQuery } from "./mock-library-service";
 import * as booksService from "./prisma/books-service";
 import * as authorsService from "./prisma/authors-service";
+import * as publishersService from "./prisma/publishers-service";
+import * as genresService from "./prisma/genres-service";
+import * as reviewsService from "./prisma/reviews-service";
 
 interface PagedResult<T> {
   data: T[];
@@ -173,46 +176,11 @@ export const getBookReviews = booksService.getBookReviews;
 
 export const getBookAverageRating = booksService.getBookAverageRating;
 
-export async function getReviewById(id: number): Promise<Review> {
-  try {
-    const found = await prisma.review.findFirst({ where: { id, deletedAt: null } });
-    if (!found) {
-      throw new AppError("Review not found", 404);
-    }
-    return toReview(found);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getReviewById = reviewsService.getReviewById;
 
-export async function updateReview(id: number, input: Partial<ReviewInput>): Promise<Review> {
-  try {
-    const exists = await prisma.review.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
-    if (!exists) {
-      throw new AppError("Review not found", 404);
-    }
+export const updateReview = reviewsService.updateReview;
 
-    const updated = await prisma.review.update({
-      where: { id },
-      data: {
-        userName: input.userName,
-        rating: input.rating,
-        comment: input.comment,
-      },
-    });
-    return toReview(updated);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function deleteReview(id: number): Promise<void> {
-  try {
-    await prisma.review.update({ data: { deletedAt: new Date() }, where: { id } });
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const deleteReview = reviewsService.deleteReview;
 
 export const getAuthors = authorsService.getAuthors;
 
@@ -226,152 +194,22 @@ export const deleteAuthor = authorsService.deleteAuthor;
 
 export const getAuthorBooks = authorsService.getAuthorBooks;
 
-export async function getPublishers(query: PublishersQuery): Promise<Publisher[]> {
-  try {
-    const result = await prisma.publisher.findMany({
-      where: {
-        deletedAt: null,
-        name: query.name ? { contains: query.name, mode: "insensitive" } : undefined,
-        country: query.country ? { contains: query.country, mode: "insensitive" } : undefined,
-      },
-      orderBy: { name: "asc" },
-    });
+export const getPublishers = publishersService.getPublishers;
 
-    return result.map((publisher) => toPublisher(publisher));
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getPublisherById = publishersService.getPublisherById;
 
-export async function getPublisherById(id: number): Promise<Publisher> {
-  try {
-    const found = await prisma.publisher.findFirst({ where: { id, deletedAt: null } });
-    if (!found) {
-      throw new AppError("Publisher not found", 404);
-    }
-    return toPublisher(found);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const createPublisher = publishersService.createPublisher;
 
-export async function createPublisher(input: PublisherInput): Promise<Publisher> {
-  try {
-    const created = await prisma.publisher.create({
-      data: {
-        name: input.name,
-        country: input.country,
-        foundedYear: input.foundedYear,
-        website: input.website,
-      },
-    });
-    return toPublisher(created);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const updatePublisher = publishersService.updatePublisher;
 
-export async function updatePublisher(id: number, input: Partial<PublisherInput>): Promise<Publisher> {
-  try {
-    await ensurePublisherExists(id);
+export const deletePublisher = publishersService.deletePublisher;
 
-    const updated = await prisma.publisher.update({
-      where: { id },
-      data: {
-        name: input.name,
-        country: input.country,
-        foundedYear: input.foundedYear,
-        website: input.website,
-      },
-    });
-    return toPublisher(updated);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getPublisherBooks = publishersService.getPublisherBooks;
 
-export async function deletePublisher(id: number): Promise<void> {
-  try {
-    const hasBooks = await prisma.book.count({ where: { publisherId: id, deletedAt: null } });
-    if (hasBooks > 0) {
-      throw new AppError("Cannot delete publisher with existing books", 409);
-    }
-    await prisma.publisher.update({ data: { deletedAt: new Date() }, where: { id } });
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getGenres = genresService.getGenres;
 
-export async function getPublisherBooks(publisherId: number): Promise<BookView[]> {
-  try {
-    await ensurePublisherExists(publisherId);
-    const result = await prisma.book.findMany({
-      where: { publisherId, deletedAt: null },
-      include: { author: true, publisher: true, genres: true },
-      orderBy: { title: "asc" },
-    });
-    return result.map((book) => toBookView(book));
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getGenreById = genresService.getGenreById;
 
-export async function getGenres(): Promise<Genre[]> {
-  try {
-    const result = await prisma.genre.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" } });
-    return result.map((genre) => toGenre(genre));
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const createGenre = genresService.createGenre;
 
-export async function getGenreById(id: number): Promise<Genre> {
-  try {
-    const found = await prisma.genre.findFirst({ where: { id, deletedAt: null } });
-    if (!found) {
-      throw new AppError("Genre not found", 404);
-    }
-    return toGenre(found);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function createGenre(input: GenreInput): Promise<Genre> {
-  try {
-    const created = await prisma.genre.create({
-      data: {
-        name: input.name,
-      },
-    });
-    return toGenre(created);
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
-
-export async function getGenreBooks(id: number): Promise<BookView[]> {
-  try {
-    const exists = await prisma.genre.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
-    if (!exists) {
-      throw new AppError("Genre not found", 404);
-    }
-
-    const rows = await prisma.book.findMany({
-      where: {
-        deletedAt: null,
-        genres: {
-          some: {
-            id,
-          },
-        },
-      },
-      include: { author: true, publisher: true, genres: true },
-      orderBy: { title: "asc" },
-    });
-
-    return rows.map((book) => toBookView(book));
-  } catch (error) {
-    mapPrismaError(error);
-  }
-}
+export const getGenreBooks = genresService.getGenreBooks;
